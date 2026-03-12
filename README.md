@@ -62,6 +62,14 @@ Six different recommendation prompts to evaluate sensitivity to framing:
 ├── utils/                         # Utilities
 │   └── llm_client.py              # Unified LLM API client
 │
+├── yougov_linked/                 # YouGov-linked pipeline (survey + Twitter, ground-truth demographics)
+│   ├── prepare_dataset.py         # Merge crosswalk + survey waves + tweets → datasets/personas.pkl
+│   ├── run_experiment.py          # Single model run across all 6 prompt styles
+│   ├── run_all_experiments.py     # Batch runner across all 3 models
+│   ├── run_analysis.py            # Full bias analysis + visualizations
+│   └── utils/
+│       └── llm_client.py          # OpenRouter client (unified gateway for all 3 providers)
+│
 ├── datasets/                      # Source datasets (not tracked)
 ├── outputs/                       # Experiment outputs
 │   └── experiments/               # Per-condition results
@@ -106,6 +114,9 @@ Set environment variables for the LLM APIs you plan to use:
 export OPENAI_API_KEY="your-openai-key"
 export ANTHROPIC_API_KEY="your-anthropic-key"
 export GEMINI_API_KEY="your-gemini-key"
+
+# For the YouGov-linked pipeline (OpenRouter)
+export OPENROUTER_API_KEY="your-openrouter-key"
 ```
 
 Or create a `.env` file (see `config.yaml.example`).
@@ -147,7 +158,27 @@ This generates:
 
 **Runtime:** ~30-40 minutes first run (builds feature importance cache), ~2-3 minutes on subsequent runs.
 
-### 3. Generate Paper Plots
+### 3. YouGov-Linked Pipeline
+
+A self-contained pipeline using the YouGov/YGHPC dataset, which links ~4,572 survey respondents to their Twitter accounts. Unlike the main pipeline where author demographics are inferred from text, this pipeline uses **ground-truth demographics** from survey data.
+
+```bash
+# Step 1: Build dataset (requires access to yghpc/ source data)
+python yougov_linked/prepare_dataset.py
+
+# Step 2: Run experiments (all 3 models × 6 prompts = 18 conditions)
+python yougov_linked/run_all_experiments.py
+
+# Or run a single model
+python yougov_linked/run_experiment.py --model openai/gpt-4o-mini
+
+# Step 3: Run analysis
+python yougov_linked/run_analysis.py
+```
+
+Requires `OPENROUTER_API_KEY` (routes to OpenAI, Anthropic, and Google via a single endpoint).
+
+### 4. Generate Paper Plots
 
 Create publication-quality figures:
 
